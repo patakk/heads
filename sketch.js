@@ -208,9 +208,9 @@ function genHead(x0, y0, w0, h0){
         //if(eyeSpacing+eyeoff < w/3)
             eyeVertsR.push([dx, dy])
     }
-    eyeVertsR.push([eyeoff+eyeSpacing-eyew, y0+eyey]);
-    eyeVertsR.push([eyeoff+eyeSpacing-eyew+3, y0+eyey+5]);
-    eyeVertsR.push([eyeoff+eyeSpacing-eyew+13+random(-2, 2), y0+eyey+7+random(-2, 2)]);
+    eyeVertsR.push([eyeoff+eyeSpacing-eyew, eyey]);
+    eyeVertsR.push([eyeoff+eyeSpacing-eyew+3, eyey+5]);
+    eyeVertsR.push([eyeoff+eyeSpacing-eyew+13+random(-2, 2), eyey+7+random(-2, 2)]);
 
     eyew = random(6, 8); // / (abs(eyeoff*.5)+1);
     eyeh = random(2, 4);
@@ -228,9 +228,9 @@ function genHead(x0, y0, w0, h0){
         //if(-eyeSpacing+eyeoff > -w/3)
             eyeVertsL.push([dx, dy])
     }
-    eyeVertsL.push([eyeoff-eyeSpacing+eyew, y0+eyey]);
-    eyeVertsL.push([eyeoff-eyeSpacing+eyew-3, y0+eyey+5]);
-    eyeVertsL.push([eyeoff-eyeSpacing+eyew-13+random(-2, 2), y0+eyey+7+random(-2, 2)]);
+    eyeVertsL.push([eyeoff-eyeSpacing+eyew, eyey]);
+    eyeVertsL.push([eyeoff-eyeSpacing+eyew-3, eyey+5]);
+    eyeVertsL.push([eyeoff-eyeSpacing+eyew-13+random(-2, 2), eyey+7+random(-2, 2)]);
 
     
     //NOSE
