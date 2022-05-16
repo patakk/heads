@@ -23,6 +23,7 @@ let allOscs = [];
 let minFreq = 100;
 let maxFreq = 1000;
 
+
 function preload() {
     helvetica = loadFont('assets/HelveticaNeueBd.ttf');
     effect = loadShader('assets/effect.vert', 'assets/effect.frag');
@@ -57,20 +58,6 @@ function setup(){
 
     generateHeads(20);
 
-    mic = new p5.AudioIn();
-    mic.start();
-    fft = new p5.FFT(0.5, 64);
-    fft.setInput(mic);
-
-    for (let i = 0; i < oscCount; i++) {
-        let osc = new p5.Oscillator();
-        osc.setType('sine');
-        osc.freq(random(minFreq, maxFreq));
-        // scale amplitude to number of oscillators
-        osc.amp(1.0 / oscCount); 
-        osc.start();
-        allOscs.push(osc);
-    }
 }
 var s = "HELLO";
 var binsum = 0;
@@ -143,6 +130,8 @@ function genHead(x0, y0, w0, h0){
     headVertsF = [];
     eyeVertsL = [];
     eyeVertsR = [];
+    earVertsL = [];
+    earVertsR = [];
     noseVerts = [];
     mouthVerts = [];
     var cx = -11110;
@@ -153,7 +142,7 @@ function genHead(x0, y0, w0, h0){
     var namp = random(22, 23);
     var frq = 0.01;
     var namp2 = random(4, 6);
-    var frq2 = 0.1;
+    var frq2 = 0.07;
     var fh = random(1.5, 2.1);
     var th = random(1.5, 2.15);
     var nh = random(1.3, 1.7);
@@ -162,13 +151,13 @@ function genHead(x0, y0, w0, h0){
         hh = h/2;
         var y = hh * sin(a+off);
         if(chc < 1){
-            ww = ww + 0.05*(w/2*abs(map(abs(y), 0, hh, 1, nh)) - ww);
+            ww = ww + 0.01*(w/2*abs(map(abs(y), 0, hh, 1, nh)) - ww);
         }
         else if(chc < 2){
-            ww = ww + 0.05*(w/2*abs(map(y, -hh, hh, 1, fh)) - ww);
+            ww = ww + 0.01*(w/2*abs(map(y, -hh, hh, 1, fh)) - ww);
         }
         else{
-            ww = ww + 0.05*(w/2*abs(map(y, -hh, hh, th, 1)) - ww);
+            ww = ww + 0.01*(w/2*abs(map(y, -hh, hh, th, 1)) - ww);
         }
         //ww = ww*abs(map(abs(y), 0, hh, 1, 1.5));
         var x = ww * cos(a+off);
@@ -178,60 +167,70 @@ function genHead(x0, y0, w0, h0){
             cx = x;
             cy = y;
         }
-        var dx = cx + namp * (-.5 + power(noise(cx*frq, 1932.314), 2));
-        var dy = cy + namp * (-.5 + power(noise(cy*frq, 222.8623), 2));
-        headVerts.push([x0+dx*.94, y0+dy*.94])
-        headVertsF.push([x0+dx*.80, y0+dy*.80])
+        namp2 = 3 + 4*power(noise((x0+cx)*.01, (y0+cy)*.01, 911.131), 5);
+        frq2 = 0.06 + 0.071*power(noise((x0+cx)*.01, (y0+cy)*.01, 83081.08113), 5);
+        var dx = cx + namp * (-.5 + power(noise(cx*frq, 1932.314), 2)) + namp2 * (-.5 + power(noise(cx*frq2, 1332.724), 2));
+        var dy = cy + namp * (-.5 + power(noise(cy*frq, 222.8623), 2)) + namp2 * (-.5 + power(noise(cy*frq2, 112.5623), 2));
+        headVerts.push([dx*.94, dy*.94])
+        headVertsF.push([dx*.87, dy*.87])
     }
 
     //EYES
-    eyeoff = random(-w/4, w/4)*2;
+    eyeoff = random(-w/4, w/4)*1.42;
     namp = random(4, 12);
     frq = 0.4;
     off = random(300);
     lim = radians(random(33, 34));
     var eyeSpacing = map(abs(eyeoff), 0, w/4, 0, 1);
     eyeSpacing = map(pow(eyeSpacing, 2), 0, 1, w/4, w/8);
-    eyeSpacing = random(w/4, w/4);
-    var eyew = random(6, 8);
+    eyeSpacing = random(w/4, w/6);
+    var eyew = random(6, 8); // / (abs(eyeoff*.5)+1);
     var eyeh = random(2, 4);
-    var eyey = random(-h/12, -h/4);
-    pupiloff = random(-eyew/2, eyew/2);
+    var eyey = random(-h/12, -h/6);
+    pupiloffx = random(eyew/2, eyew/2)*0;
+    pupiloffy = -random(eyeh/2, eyeh/2)*3;
+    var vec1 = createVector(0, 0);
+    var vec2 = createVector(x0, y0);
+    var vec = p5.Vector.sub(vec2, vec1);
+    vec.normalize();
+    vec.mult(-1);
+    pupiloffx = vec.x*eyew;
+    pupiloffy = vec.y*eyeh;
     for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
         var dx = eyeSpacing+eyeoff + eyew * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
         var dy = eyey + eyeh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
-        if(eyeSpacing+eyeoff < w/3)
-            eyeVertsR.push([x0+dx, y0+dy])
+        //if(eyeSpacing+eyeoff < w/3)
+            eyeVertsR.push([dx, dy])
     }
-    for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
-        var dx = eyeSpacing+eyeoff+pupiloff + 1 * sin(a+off) + namp/3 * (-.5 + power(noise(a*frq, 3332.44), 2));
-        var dy = eyey + 3 * cos(a+off) + namp/3 * (-.5 + power(noise(a*frq, 142.5623), 2));
-        if(eyeSpacing+eyeoff < w/3)
-            eyeVertsR.push([x0+dx, y0+dy])
+    for(var a = 0; a < 4*PI+lim; a += 2*PI/20){
+        var dx = eyeSpacing+eyeoff+pupiloffx + 2 * sin(a+off) + namp/1 * (-.5 + power(noise(a*frq, 3332.44), 2));
+        var dy = eyey+pupiloffy + 3 * cos(a+off) + namp/1 * (-.5 + power(noise(a*frq, 142.5623), 2));
+        //if(eyeSpacing+eyeoff < w/3)
+            eyeVertsR.push([dx, dy])
     }
-    eyeVertsR.push([x0+eyeoff+eyeSpacing-eyew, y0+eyey]);
-    eyeVertsR.push([x0+eyeoff+eyeSpacing-eyew+3, y0+eyey+5]);
-    eyeVertsR.push([x0+eyeoff+eyeSpacing-eyew+13+random(-2, 2), y0+eyey+7+random(-2, 2)]);
+    eyeVertsR.push([eyeoff+eyeSpacing-eyew, y0+eyey]);
+    eyeVertsR.push([eyeoff+eyeSpacing-eyew+3, y0+eyey+5]);
+    eyeVertsR.push([eyeoff+eyeSpacing-eyew+13+random(-2, 2), y0+eyey+7+random(-2, 2)]);
 
-    eyew = random(6, 11);
+    eyew = random(6, 8); // / (abs(eyeoff*.5)+1);
     eyeh = random(2, 4);
     off = random(300);
     lim = radians(random(33, 34));
     for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
         var dx = -eyeSpacing+eyeoff + eyew * sin(a+off) + namp * (-.5 + power(noise(a*frq, 113432.44), 2));
         var dy = eyey + eyeh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 14452.21323), 2));
-        if(-eyeSpacing+eyeoff > -w/3)
-            eyeVertsL.push([x0+dx, y0+dy])
+        //if(-eyeSpacing+eyeoff > -w/3)
+            eyeVertsL.push([dx, dy])
     }
-    for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
-        var dx = -eyeSpacing+eyeoff+pupiloff + 1 * sin(a+off) + namp/3 * (-.5 + power(noise(a*frq, 113432.44), 2));
-        var dy = eyey + 3 * cos(a+off) + namp/3 * (-.5 + power(noise(a*frq, 14452.21323), 2));
-        if(-eyeSpacing+eyeoff > -w/3)
-            eyeVertsL.push([x0+dx, y0+dy])
+    for(var a = 0; a < 4*PI+lim; a += 2*PI/20){
+        var dx = -eyeSpacing+eyeoff+pupiloffx + 2 * sin(a+off) + namp/1 * (-.5 + power(noise(a*frq, 113432.44), 2));
+        var dy = eyey+pupiloffy + 3 * cos(a+off) + namp/1 * (-.5 + power(noise(a*frq, 14452.21323), 2));
+        //if(-eyeSpacing+eyeoff > -w/3)
+            eyeVertsL.push([dx, dy])
     }
-    eyeVertsL.push([x0+eyeoff-eyeSpacing+eyew, y0+eyey]);
-    eyeVertsL.push([x0+eyeoff-eyeSpacing+eyew-3, y0+eyey+5]);
-    eyeVertsL.push([x0+eyeoff-eyeSpacing+eyew-13+random(-2, 2), y0+eyey+7+random(-2, 2)]);
+    eyeVertsL.push([eyeoff-eyeSpacing+eyew, y0+eyey]);
+    eyeVertsL.push([eyeoff-eyeSpacing+eyew-3, y0+eyey+5]);
+    eyeVertsL.push([eyeoff-eyeSpacing+eyew-13+random(-2, 2), y0+eyey+7+random(-2, 2)]);
 
     
     //NOSE
@@ -254,27 +253,49 @@ function genHead(x0, y0, w0, h0){
         }
         dx += k/10. * namp * (-.5 + power(noise(x0+y0+k*frq, 32.44), 2));
         dy += k/10. * namp * (-.5 + power(noise(x0+y0+k*frq, 42.223), 2)); 
-        noseVerts.push([x0+dx, y0+dy]);
+        noseVerts.push([dx, dy]);
     }
     for(var k = 0; k < 10; k++){
         var dx = lerp(nx1, nx2, k/(10.-1));
         var dy = 0;
-        noseVerts.push([x0+dx, y0+dy]);
+        noseVerts.push([dx, dy]);
     }
 
     //MOUTH
-    mouthoff = eyeoff + 0*random(-w/12, w/12);
+    mouthoff = eyeoff * random(0.6, 1.);
     namp = random(4, 12);
     frq = 0.4;
     off = random(300);
     lim = radians(random(33, 34));
     var mouthw = random(6, 8);
-    var mouthh = random(2, 4);
+    var mouthh = random(1, 3);
     var mouthy = random(h/12, h/4);
     for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
         var dx = mouthoff + mouthw * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
         var dy = mouthy + mouthh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
-        mouthVerts.push([x0+dx, y0+dy])
+        mouthVerts.push([dx, dy])
+    }
+
+    
+    //EARS
+    earoff = eyeoff * random(0.6, 1.);
+    earSpacing = random(w/3, w/3);
+    namp = random(4, 12);
+    frq = 0.4;
+    off = random(300);
+    lim = radians(random(33, 34));
+    var earw = random(6, 8);
+    var earh = random(1, 3);
+    var eary = random(h/12, h/4);
+    for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
+        var dx = earSpacing + earoff + earw * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
+        var dy = eary + earh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
+        //earVertsL.push([dx, y0+dy])
+    }
+    for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
+        var dx = earSpacing + earoff + earw * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
+        var dy = eary + earh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
+        //earVertsR.push([dx, y0+dy])
     }
 
     return {
@@ -284,6 +305,10 @@ function genHead(x0, y0, w0, h0){
         'mouth': mouthVerts,
         'eyeL': eyeVertsL,
         'eyeR': eyeVertsR,
+        'earL': earVertsL,
+        'earR': earVertsR,
+        'x0': x0,
+        'y0': y0,
     }
 }
 
@@ -294,9 +319,9 @@ function generateHeads(num){
 
     for(var k = 0; k < num; k++){
         var w = random(66, 90);
-        var x = 0.4*width*(-.5+power(noise(k*6.1, 1312.3114),3));
-        var y = 0.4*height*(-.5+power(noise(k*6.1, 224.666),3));
-        heads.push(genHead(width/2*0+x, height/2*0+y, w, w*random(1.2, 1.7)));
+        var x = 0.66*width*(-.5+power(noise(k*6.1, 1312.3114),3));
+        var y = 0.66*height*(-.5+power(noise(k*6.1, 224.666),3));
+        heads.push(genHead(width/2*0+x, height/2*0+y, w, w*random(1.4, 1.9)));
     }
 }
 
@@ -313,6 +338,7 @@ function drawHeads(){
         pg.pop();
     }
     for(var k = 0; k < heads.length; k++){
+
         pg.push();
         var yy0 = heads[k].headF[0][1];
         var yyy = yy0;
@@ -336,40 +362,55 @@ function drawHeads(){
 
         pg.noFill();
         pg.stroke(cl2);
-        pg.strokeWeight(3);
+        pg.strokeWeight(4);
         pg.beginShape();
         for(var j = 0; j < heads[k].head.length; j++){
             var x = heads[k].head[j][0];
             var y = heads[k].head[j][1];
-            pg.vertex(x, y);
+            pg.vertex(x+random(-.5,.5), y+random(-.5,.5));
         }
         pg.endShape();
         pg.beginShape();
         for(var j = 0; j < heads[k].nose.length; j++){
             var x = heads[k].nose[j][0];
             var y = heads[k].nose[j][1];
-            pg.vertex(x, y);
+            pg.vertex(x+random(-.5,.5), y+random(-.5,.5));
         }
         pg.endShape();
         pg.beginShape();
         for(var j = 0; j < heads[k].mouth.length; j++){
             var x = heads[k].mouth[j][0];
             var y = heads[k].mouth[j][1];
-            pg.vertex(x, y);
+            var jj = 1.*pow((j+1)/heads[k].mouth.length, 2);
+            pg.vertex(x+random(-.5,.5), y+random(-.5,.5));
         }
         pg.endShape();
         pg.beginShape();
         for(var j = 0; j < heads[k].eyeL.length; j++){
             var x = heads[k].eyeL[j][0];
             var y = heads[k].eyeL[j][1];
-            pg.vertex(x, y);
+            pg.vertex(x+random(-.5,.5), y+random(-.5,.5));
         }
         pg.endShape();
         pg.beginShape();
         for(var j = 0; j < heads[k].eyeR.length; j++){
             var x = heads[k].eyeR[j][0];
             var y = heads[k].eyeR[j][1];
-            pg.vertex(x, y);
+            pg.vertex(x+random(-.5,.5), y+random(-.5,.5));
+        }
+        pg.endShape();
+        pg.beginShape();
+        for(var j = 0; j < heads[k].earL.length; j++){
+            var x = heads[k].earL[j][0];
+            var y = heads[k].earL[j][1];
+            pg.vertex(x+random(-.5,.5), y+random(-.5,.5));
+        }
+        pg.endShape();
+        pg.beginShape();
+        for(var j = 0; j < heads[k].earR.length; j++){
+            var x = heads[k].earR[j][0];
+            var y = heads[k].earR[j][1];
+            pg.vertex(x+random(-.5,.5), y+random(-.5,.5));
         }
         pg.endShape();
         pg.pop();
@@ -389,24 +430,45 @@ function power(p, g) {
 }
 
 var zas = 0;
+var started = false;
+
+var autoPanner;
+// route an oscillator through the panner and start it
+var oscillator;
+
 function mouseClicked(){
+    Tone.start()
     //getAudioContext().resume();
-    
-    getAudioContext().resume();
-    for (let i = 0; i < oscCount; i++) {
-        allOscs[i].freq(random(100, 1000));    
-    }
     //osc.start();
     //osc2.start();
     //envelope.play(osc);
     //envelope.play(osc2);
     zas = (zas+1)%2;
 
+    const now = Tone.now()
+    // trigger the attack immediately
+    
+    var N = 4;
+    if(!started){
+        started = true;
+        for(var k = 0; k < N; k++){
+            //const synth = new Tone.Synth().toDestination();
+            //synth.triggerAttackRelease(random(100, 1000), 1.1, now+.1*k/N)
+
+            // create an autopanner and start it
+            autoPanner = new Tone.AutoPanner("16n").toDestination().start();
+            // route an oscillator through the panner and start it
+            oscillator = new Tone.Oscillator(200, "sine").toDestination().start();
+        }
+    }
+    else{
+        oscillator.frequency.value = random(100, 500);
+    }
     generateHeads(20);
 }
 function keyPressed(){
 
-    getAudioContext().resume();
+    //getAudioContext().resume();
     num = 20;
 
     if(keyCode-48 >=0 && keyCode-48 <= 9){
@@ -429,17 +491,6 @@ function keyPressed(){
 
     //getAudioContext().resume();
     
-    for (let i = 0; i < oscCount; i++) {
-        allOscs[i].freq(random(100, 1000));    
-        if(i > (keyCode-48)/1){
-            allOscs[i].amp(0);    
-            print(i)
-        }
-        else{
-            print(i,'off')
-            allOscs[i].amp(1.0 / oscCount);
-        }
-    }
     //osc.start();
     //osc2.start();
     //envelope.play(osc);
