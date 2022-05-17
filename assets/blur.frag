@@ -153,7 +153,7 @@ vec3 gaussianBlur( sampler2D t, vec2 texUV, vec2 stepSize ){
 void main() {
 
   	vec2 uv = gl_FragCoord.xy*texelSize;
-    vec2 st = uv*vec2(3.2, 13.)*1.64;
+    vec2 st = uv*vec2(6.2, 6.)*6.;
     uv = uv/2.;
     uv.y = 1. - uv.y;
 
@@ -182,8 +182,8 @@ void main() {
 
 	// use our blur function
 	vec3 blur;
-	blur = gaussianBlur(tex0, uv, texelSize * direction * amp * (ff + .196));
 	blur = gaussianBlur(tex0, uv, texelSize * direction * amp);
+	blur = gaussianBlur(tex0, uv, texelSize * direction * amp * (ff + .196));
 
   	gl_FragColor = vec4(vec3(ff), 1.0);
   	gl_FragColor = vec4(blur, 1.0);

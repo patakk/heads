@@ -4,6 +4,7 @@ uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform vec4 incolor;
 uniform float u_time;
+uniform float seed;
 uniform sampler2D tex0;
 uniform sampler2D tex1;
 varying vec2 vTexCoord;
@@ -88,21 +89,21 @@ float fbm3 ( in vec2 _st, in float t) {
 
 void main() {
     vec2 uv = gl_FragCoord.xy/u_resolution.xy;
-    vec2 st = uv*vec2(3.2, 13.)*1.64;
+    vec2 st = uv*vec2(3.2, 13.)*95.64;
     uv = uv/2.;
     uv.y = 1. - uv.y;
     //st += st * abs(sin(u_time*0.002)*3.0);
     vec3 color = vec3(0.0);
 
     vec2 q = vec2(0.);
-    q.x = fbm3( st + 0.1, u_time*.11);
-    q.y = fbm3( st + vec2(1.0), u_time*.11);
+    q.x = fbm3( st + 0.1, u_time*.08*0.);
+    q.y = fbm3( st + vec2(1.0), u_time*.08*0.);
 
     vec2 r = vec2(0.);
-    r.x = fbm3( st + 1.0*q + vec2(1.7,9.2)+ 0.15*u_time*0., u_time*.11);
-    r.y = fbm3( st + 1.0*q + vec2(8.3,2.8)+ 0.126*u_time*0., u_time*.11);
+    r.x = fbm3( st + 1.0*q + vec2(1.7,9.2)+ 0.15*u_time*0., u_time*.08*0.);
+    r.y = fbm3( st + 1.0*q + vec2(8.3,2.8)+ 0.126*u_time*0., u_time*.08*0.);
 
-    float f = fbm3(st+r, u_time*.11);
+    float f = fbm3(st+r, u_time*.08*0.);
 
     color = mix(vec3(0.101961,0.619608,0.666667),
                 vec3(0.666667,0.666667,0.498039),
@@ -117,16 +118,16 @@ void main() {
                 clamp(length(r.x),0.0,1.0));
 
     float ff = (f*f*f+0.120*f*f+.5*f);
-    ff = 1.*ff*ff;
-    ff *= 0.01*.32;
+    ff = 1.*ff;
+    ff *= 0.01*.22;
     
-    vec2 uvr = uv - vec2(1., 0.)/u_resolution*1.;
+    vec2 uvr = uv - vec2(1., 0.)/u_resolution*.7*0.;
     vec2 uvg = uv;
-    vec2 uvb = uv + vec2(1., 0.)/u_resolution*1.;
+    vec2 uvb = uv + vec2(1., 0.)/u_resolution*.7*0.;
     
-    vec2 uvrd = uv - .0*ff*vec2(1., 0.) - 44.5*ff*vec2(1., 0.)/u_resolution*2.;
-    vec2 uvgd = uv - .0*ff*vec2(1., 0.)*1.00;
-    vec2 uvbd = uv - .0*ff*vec2(1., 0.) + 44.5*ff*vec2(1., 0.)/u_resolution*2.;
+    vec2 uvrd = uv - .66*ff*vec2(1., 0.) - 0.*344.5*ff*vec2(1., 0.)/u_resolution*2.;
+    vec2 uvgd = uv - .66*ff*vec2(1., 0.)*1.00;
+    vec2 uvbd = uv - .66*ff*vec2(1., 0.) + 0.*344.5*ff*vec2(1., 0.)/u_resolution*2.;
 
     float cr = texture2D(tex0, uvr).r;
     float cg = texture2D(tex0, uvg).g;
@@ -141,7 +142,7 @@ void main() {
     //imgd.gb *= 0.;
     //imgd.r = 1. - imgd.r;
 
-    float rndm = randomNoise(uv+u_time*.001+fbm(uv));
+    float rndm = randomNoise(uv+seed/100000.+u_time*.001+fbm(uv));
     float p = 0.5;
     //vec4 outc = imgc*p + (1.-p)*imgd;
     vec4 outc = (1. - (1. - imgd)*imgc);
@@ -159,7 +160,7 @@ void main() {
 
     outc = blue*bluem + imgd*(1.-bluem) + .15*(-.5 + rndm);
     ff = smoothstep(0.001, 0.004, ff);
-    outc = imgc + .07*(-.5 + rndm);
+    outc = imgd + .127*(-.5 + rndm);
     outc.a = 1.0;
 
     gl_FragColor = outc;
