@@ -66,6 +66,7 @@ function setup(){
 
     generateHeads(20, 31114);
     //frameRate(5);
+    noLoop();
 
 }
 var s = "HELLO";
@@ -98,14 +99,17 @@ function draw(){
     quad(-1,-1,1,-1,1,1,-1,1);*/
     if(frameCount%1==111111110)
         generateHeads(num, 3890);
+    pg.push();
+    //pg.scale(0.8);
     drawHeads();
+    pg.pop();
     //pg.line(0,0,mouseX-width/2,mouseY-height/2);
 
     blurH.setUniform('tex0', pg);
     blurH.setUniform('texelSize', [1.0/width, 1.0/height]);
     blurH.setUniform('direction', [1.0, 0.0]);
     blurH.setUniform('u_time', frameCount*0+globalseed*.01);
-    blurH.setUniform('amp', .28);
+    blurH.setUniform('amp', 0.0*.28);
     blurpass1.shader(blurH);
     blurpass1.quad(-1,-1,1,-1,1,1,-1,1);
     
@@ -113,7 +117,7 @@ function draw(){
     blurV.setUniform('texelSize', [1.0/width, 1.0/height]);
     blurV.setUniform('direction', [0.0, 1.0]);
     blurV.setUniform('u_time', frameCount*0+globalseed*.01);
-    blurV.setUniform('amp', .07);
+    blurV.setUniform('amp', 0.0*.07);
     blurpass2.shader(blurV);
     blurpass2.quad(-1,-1,1,-1,1,1,-1,1);
 
@@ -128,11 +132,16 @@ function draw(){
     effectpass.quad(-1,-1,1,-1,1,1,-1,1);
   
     // draw the second pass to the screen
-    image(effectpass, 0,0, width, height);
+    image(pg, 0,0, width, height);
+
+    vectorizeHeads();
 }
 
 function genHead(x0, y0, w0, h0, seed){
     
+    w0 = 77;
+    h0 = 111;
+
     w = w0;
     h = h0;
 
@@ -169,6 +178,10 @@ function genHead(x0, y0, w0, h0, seed){
     var eyey = random(-h/12, -h/6);
     var earseeds = [];
     var timer = 0;
+    var chinthresh = random(25, 35);
+    var chintrans = random(20, 40);
+    var chinoffx = random(0, 0);
+    var chinoffy = random(-12, 12);
     for(var a = 0; a < 2.15*PI+lim; a += 2*PI/200.){
         hh = h/2;
         var y = hh * sin(a+off);
@@ -197,6 +210,15 @@ function genHead(x0, y0, w0, h0, seed){
         frq2 = 0.06 + 0.071*power(noise((x0+cx)*.01, (y0+cy)*.01, 83081.08113), 5);
         var dx = cx + namp * (-.5 + power(noise(seed+cx*frq+width/2, 1932.314), 2)) + namp2 * (-.5 + power(noise(seed+cx*frq2+width/2, 1332.724), 2));
         var dy = cy + namp * (-.5 + power(noise(seed+cy*frq+height/2, 222.8623), 2)) + namp2 * (-.5 + power(noise(seed+cy*frq2+height/2, 112.5623), 2));
+        if(cy > chinthresh){
+            var ddy = cy - chinthresh;
+            if(ddy < chintrans){
+                dy = dy - chinoffy*power(ddy/chintrans, 3);
+            }
+            else{
+                dy = dy - chinoffy;
+            }
+        }
         if(abs(dy-eyey) < 8 && earseeds.length < 2){
             if(earseeds.length == 0){
                 earseeds.push([dx*1.05, dy])
@@ -213,16 +235,16 @@ function genHead(x0, y0, w0, h0, seed){
     }
 
     //EYES
-    eyeoff = (random(-w/4, w/4))*1.2;
-    //eyeoff = (rnoise(seed, -w/4, w/4))*1.2;
+    eyex = (random(-w/4, w/4))*1.2;
+    //eyex = (rnoise(seed, -w/4, w/4))*1.2;
     namp = random(4, 12);
     frq = 0.4;5
     off = random(300);
     lim = radians(random(33, 34));
-    var eyeSpacing = map(abs(eyeoff), 0, w/4, 0, 1);
+    var eyeSpacing = map(abs(eyex), 0, w/4, 0, 1);
     eyeSpacing = map(pow(eyeSpacing, 2), 0, 1, w/4, w/8);
     eyeSpacing = random(w/4, w/6);
-    var eyew = random(6, 8); // / (abs(eyeoff*.5)+1);
+    var eyew = random(6, 8); // / (abs(eyex*.5)+1);
     var eyeh = random(2, 4)*2;
     pupiloffx = random(eyew/2, eyew/2)*0;
     pupiloffy = -random(eyeh/2, eyeh/2)*3;
@@ -234,38 +256,38 @@ function genHead(x0, y0, w0, h0, seed){
     pupiloffx = vec.x*eyew;
     pupiloffy = vec.y*eyeh/2;
     for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
-        var dx = eyeSpacing+eyeoff + eyew * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
+        var dx = eyeSpacing+eyex + eyew * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
         var dy = eyey + eyeh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
-        //if(eyeSpacing+eyeoff < w/3)
+        //if(eyeSpacing+eyex < w/3)
             eyeVertsR.push([dx, dy])
     }
-    eyeVertsR.push([eyeoff+eyeSpacing-eyew, eyey]);
-    eyeVertsR.push([eyeoff+eyeSpacing-eyew+3, eyey+5]);
-    eyeVertsR.push([eyeoff+eyeSpacing-eyew+13+random(-2, 2), eyey+7+random(-2, 2)]);
+    eyeVertsR.push([eyex+eyeSpacing-eyew, eyey]);
+    eyeVertsR.push([eyex+eyeSpacing-eyew+3, eyey+5]);
+    eyeVertsR.push([eyex+eyeSpacing-eyew+13+random(-2, 2), eyey+7+random(-2, 2)]);
     for(var a = 0; a < 4*PI+lim; a += 2*PI/20){
-        var dx = eyeSpacing+eyeoff+pupiloffx + 2 * sin(a+off) + namp/2 * (-.5 + power(noise(a*frq, 3332.44), 2));
+        var dx = eyeSpacing+eyex+pupiloffx + 2 * sin(a+off) + namp/2 * (-.5 + power(noise(a*frq, 3332.44), 2));
         var dy = eyey+pupiloffy + 2 * cos(a+off) + namp/2 * (-.5 + power(noise(a*frq, 142.5623), 2));
-        //if(eyeSpacing+eyeoff < w/3)
+        //if(eyeSpacing+eyex < w/3)
             eyeVertsRP.push([dx, dy])
     }
 
-    eyew = random(6, 8); // / (abs(eyeoff*.5)+1);
+    eyew = random(6, 8); // / (abs(eyex*.5)+1);
     eyeh = random(2, 4);
     off = random(300);
     lim = radians(random(33, 34));
     for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
-        var dx = -eyeSpacing+eyeoff + eyew * sin(a+off) + namp * (-.5 + power(noise(a*frq, 113432.44), 2));
+        var dx = -eyeSpacing+eyex + eyew * sin(a+off) + namp * (-.5 + power(noise(a*frq, 113432.44), 2));
         var dy = eyey + eyeh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 14452.21323), 2));
-        //if(-eyeSpacing+eyeoff > -w/3)
+        //if(-eyeSpacing+eyex > -w/3)
             eyeVertsL.push([dx, dy])
     }
-    eyeVertsL.push([eyeoff-eyeSpacing+eyew, eyey]);
-    eyeVertsL.push([eyeoff-eyeSpacing+eyew-3, eyey+5]);
-    eyeVertsL.push([eyeoff-eyeSpacing+eyew-13+random(-2, 2), eyey+7+random(-2, 2)]);
+    eyeVertsL.push([eyex-eyeSpacing+eyew, eyey]);
+    eyeVertsL.push([eyex-eyeSpacing+eyew-3, eyey+5]);
+    eyeVertsL.push([eyex-eyeSpacing+eyew-13+random(-2, 2), eyey+7+random(-2, 2)]);
     for(var a = 0; a < 4*PI+lim; a += 2*PI/20){
-        var dx = -eyeSpacing+eyeoff+pupiloffx + 2 * sin(a+off) + namp/2 * (-.5 + power(noise(a*frq, 113432.44), 2));
+        var dx = -eyeSpacing+eyex+pupiloffx + 2 * sin(a+off) + namp/2 * (-.5 + power(noise(a*frq, 113432.44), 2));
         var dy = eyey+pupiloffy + 2 * cos(a+off) + namp/2 * (-.5 + power(noise(a*frq, 14452.21323), 2));
-        //if(-eyeSpacing+eyeoff > -w/3)
+        //if(-eyeSpacing+eyex > -w/3)
             eyeVertsLP.push([dx, dy])
     }
 
@@ -274,19 +296,19 @@ function genHead(x0, y0, w0, h0, seed){
     var nv = [];
     var ny1 = eyey;
     var ny2 = 0;
-    var nx1 = eyeoff+eyeSpacing-eyew;
-    var nx2 = eyeoff+eyeSpacing-eyew-random(4, 14);
+    var nx1 = eyex+eyeSpacing-eyew;
+    var nx2 = eyex+eyeSpacing-eyew-random(4, 14);
     namp = random(25,36);
     frq = 0.06;
-    if(eyeoff < 0){
-        nx1 = eyeoff-eyeSpacing+eyew;
-        nx2 = eyeoff-eyeSpacing+eyew+random(4, 14);
+    if(eyex < 0){
+        nx1 = eyex-eyeSpacing+eyew;
+        nx2 = eyex-eyeSpacing+eyew+random(4, 14);
     }
     for(var k = 0; k < 10; k++){
-        var dx = eyeoff+eyeSpacing-eyew;
+        var dx = eyex+eyeSpacing-eyew;
         var dy = lerp(ny1, ny2, k/(10.-1));
-        if(eyeoff < 0){
-            dx = eyeoff-eyeSpacing+eyew;
+        if(eyex < 0){
+            dx = eyex-eyeSpacing+eyew;
         }
         dx += k/10. * namp * (-.5 + power(noise(x0+y0+k*frq, 32.44), 2));
         dy += k/10. * namp * (-.5 + power(noise(x0+y0+k*frq, 42.223), 2)); 
@@ -299,23 +321,23 @@ function genHead(x0, y0, w0, h0, seed){
     }
 
     //MOUTH
-    mouthoff = eyeoff * random(0.6, 1.);
+    mouthx = eyex * random(0.6, 1.);
     namp = random(4, 12);
     frq = 0.4;
-    off = random(300);
-    lim = radians(random(33, 34));
+    off = random(2*PI);
+    lim = radians(random(20, 30));
     var mouthw = random(6, 8);
     var mouthh = random(1, 3);
     var mouthy = random(h/12, h/4);
     for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
-        var dx = mouthoff + mouthw * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
-        var dy = mouthy + mouthh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
+        var dx = mouthx + mouthw * sin(a+off) + namp * (-.5 + power(noise(a*frq, x0+y0, 3332.44), 2));
+        var dy = mouthy + mouthh * cos(a+off) + namp * (-.5 + power(noise(a*frq, x0+y0, 1423.5623), 2));
         mouthVerts.push([dx, dy])
     }
 
     
     //EARS
-    earoff = eyeoff*1.;
+    earoff = eyex*1.;
     earSpacing = random(w/2, w/2);
     namp = random(4, 12);
     frq = 0.4;
@@ -324,21 +346,24 @@ function genHead(x0, y0, w0, h0, seed){
     var earw = random(1, 3);
     var earh = random(6, 8);
     var eary = eyey*0.9;
-    for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
-        var dx = earseeds[0][0] + earw * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
-        var dy = earseeds[0][1] + earh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
-        if(eyeoff > 0)
-            earVertsL.push([dx, dy])
+    if(earseeds.length == 1){
+        for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
+            var dx = earseeds[0][0] + earw * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
+            var dy = earseeds[0][1] + earh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
+            if(eyex > 0)
+                earVertsL.push([dx, dy])
+        }
     }
-    for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
-        var dx = earseeds[1][0] + earw * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
-        var dy = earseeds[1][1] + earh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
-        if(eyeoff < 0)
-            earVertsR.push([dx, dy])
+    if(earseeds.length == 2){
+        for(var a = 0; a < 2*PI+lim; a += 2*PI/20){
+            var dx = earseeds[1][0] + earw * sin(a+off) + namp * (-.5 + power(noise(a*frq, 3332.44), 2));
+            var dy = earseeds[1][1] + earh * cos(a+off) + namp * (-.5 + power(noise(a*frq, 142.5623), 2));
+            if(eyex < 0)
+                earVertsR.push([dx, dy])
+        }
     }
-    
     //EARS
-    eyeboff = eyeoff;
+    eyeboff = eyex;
     eyebSpacing = eyeSpacing;
     namp = random(4, 12);
     frq = 0.4;
@@ -391,13 +416,18 @@ function generateHeads(num, seed){
         var w = random(54, 90);
         var h = w*random(2.4, 6.9);
         h = w*random(1.4, 1.9);
-        w = rnoise(seed+k, 54, 90)
-        h = w*rnoise(seed+k+1231.311, 1.4, 1.9);
+        w = rnoise(seed+k*31.31, 54, 90)
+        h = w*rnoise(seed+k*31.31+1231.311, 1.4, 1.9);
         var oo = 0;
         if(k > num/2)
-            oo = 20831.411;
-        var x = 0.55*min(width,height)*(-.5+power(noise( oo+k*.28, 1312.3114, oo+frameCount*0.05),3));
-        var y = 0.33*min(width,height)*(-.5+power(noise( oo+k*.28, 224.666, oo+frameCount*0.025),3)) - h/2 + 110;
+            oo = 231.411;
+        var x, y;
+        x = 0.25*width*(-.5+power(noise( oo+k*.28, 1312.3114, oo+frameCount*0.025, oo),3));
+        y = 0.5*height*(-.5+power(noise( oo+k*.28, 224.666, oo+frameCount*0.0125, oo+21.31),3)) - h/2 + 94;
+        if(width < height){
+            x = 0.75*width*(-.5+power(noise( oo+k*.28, 1312.3114, oo+frameCount*0.025),3));
+            y = 0.24*height*(-.5+power(noise( oo+k*.28, 224.666, oo+frameCount*0.0125),3)) - h/2 + 94;
+        }
         heads.push(genHead(width/2*0+x, height/2*0+y, w, h, k));
     }
 
@@ -419,11 +449,17 @@ function generateHeads(num, seed){
     //wheads.push(genHead(0, 0, 60, 90))
 }
 
+function vectorizeHeads(){
+    
+}
+
 function drawHeads(){
     mask.clear();
     mask.background(0);
     pg.clear();
     pg.background(cl1);
+    pg.push();
+    //pg.rotateY(mouseX/width*2*PI)
     // HEAD
     for(var k = 0; k < heads.length; k++){
         var fff = 2 + k%253;
@@ -432,8 +468,8 @@ function drawHeads(){
 
         pg.push();
         var yyy = heads[k].headF[0][1];
-        pg.translate(0, 0, yyy);
-        pg.rotateZ(radians(9*(-.5 + power(noise(k*113.211, 134.284), 4))));
+        pg.translate(0, 0, k*25);
+        //pg.rotateZ(radians(9*(-.5 + power(noise(k*113.211, 134.284), 4))));
 
         var v = createVector(mouseX-width/2-xx0, mouseY-height/2-yy0);
         v.normalize();
@@ -446,7 +482,7 @@ function drawHeads(){
         pg.fill(cl1);
         pg.beginShape();
         mask.noStroke();
-        mask.fill(fff);
+        mask.fill(k);
         mask.beginShape();
         var offx = 20*(-.5 + power(noise(k*13.41, 874.884), 4))*0;
         var offy = 20*(-.5 + power(noise(k*13.41, 314.411), 4))*0;
@@ -463,8 +499,26 @@ function drawHeads(){
 
         pg.noFill();
         pg.stroke(cl2);
-        pg.strokeWeight(3+1*power(noise(k*1.314+globalseed),4));
-        pg.beginShape();
+        pg.strokeWeight(2.4+1.8*power(noise(k*1.314+globalseed),4));
+        Object.entries(heads[k]).forEach(([key, value]) => {
+            if(typeof(value) == 'object' && key != 'headF'){
+                pg.beginShape();
+                for(var j = 0; j < heads[k][key].length; j++){
+                    var x = heads[k][key][j][0];
+                    var y = heads[k][key][j][1];5
+                    if(noise(j*0.331,k) > .79){
+                        pg.vertex(x+xx0+random(-.5,.5)*1, y+yy0+random(-.5,.5)*1);
+                    }
+                    else{
+                        pg.vertex(x+xx0+random(-.5,.5)*1, y+yy0+random(-.5,.5)*1);
+                    }
+                }
+                pg.endShape();
+            }
+         });
+
+        
+        /*pg.beginShape();
         for(var j = 0; j < heads[k].head.length; j++){
             var x = heads[k].head[j][0];
             var y = heads[k].head[j][1];5
@@ -542,9 +596,10 @@ function drawHeads(){
             var y = heads[k].eyeRB[j][1];
             pg.vertex(x+xx0+random(-.5,.5)*1, y+yy0+random(-.5,.5)*1);
         }
-        pg.endShape();
+        pg.endShape();*/
         pg.pop();
     }
+    pg.pop();
 }
 
 function windowResized() {
@@ -612,6 +667,11 @@ function keyPressed(){
     //getAudioContext().resume();
     num = 20;
 
+    if(keyCode == 83 || keyCode == 115){ // 's'
+        print("hello")
+        pg.save("test.svg");
+    }
+
     if(keyCode-48 >=0 && keyCode-48 <= 9){
         num = (keyCode-48);
         if(num <= 3)
@@ -629,23 +689,23 @@ function keyPressed(){
         else if(num == 9)
             num = 80;
 
-        var N = keyCode-48;
+        var N = 2 + (keyCode-48-1)/4.;
         if(!started){
             started = true;
             for(var k = 0; k < 10; k++){
                 const autoPanner = new Tone.AutoPanner("6n").toDestination();
                 // route an oscillator through the panner and start it
-                const oscillator = new Tone.Oscillator(random(100, 1000), "sine").connect(autoPanner);
+                const oscillator = new Tone.Oscillator(random(100, 333), "sine").connect(autoPanner);
                 panners.push(autoPanner);
                 oscillators.push(oscillator);
             }
         }else{
             for(var k = 0; k < 10; k++){
                 if(k < N){
-                    panners[k].start();
-                    oscillators[k].frequency.value = map(pow(random(1), 2), 0, 1, 100, 1000);
+                    //panners[k].start();
+                    oscillators[k].frequency.value = map(pow(random(1), 2), 0, 1, 100, 333);
                     oscillators[k].volume.value = 1./N*.1;
-                    oscillators[k].start();
+                    //oscillators[k].start();
                 }
                 else{
                     panners[k].stop();
