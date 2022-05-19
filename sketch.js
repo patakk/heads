@@ -1,5 +1,6 @@
 let canvas;
 var pg;
+var svgout;
 var mask;
 var blurpass1;
 var blurpass2;
@@ -42,12 +43,15 @@ function setup(){
     imageMode(CENTER);
 
     pg = createGraphics(width, height, WEBGL);
+    svgout = createGraphics(width, height, SVG);
     pg.noStroke();
     pg.colorMode(HSB, 100);
-    pg.ortho(-width/2, width/2, -height/2, height/2, 0, 2500);
+    pg.strokeJoin(ROUND);
+    pg.ortho(-width/2, width/2, -height/2, height/2, 0, 4444);
     mask = createGraphics(width, height, WEBGL);
     mask.noStroke();
-    mask.ortho(-width/2, width/2, -height/2, height/2, 0, 2500);
+    mask.ortho(-width/2, width/2, -height/2, height/2, 0, 4444);
+    mask.strokeJoin(ROUND);
     colorMode(HSB, 100);
 
     blurpass1 = createGraphics(width, height, WEBGL);
@@ -66,14 +70,14 @@ function setup(){
 
     generateHeads(20, 31114);
     //frameRate(5);
-    noLoop();
-
 }
+
 var s = "HELLO";
 var binsum = 0;
 var timer = -1;
 var num = 20;
 function draw(){
+    background(100);
 
     /*let bins = fft.analyze();
     binsum = 0;
@@ -101,7 +105,9 @@ function draw(){
         generateHeads(num, 3890);
     pg.push();
     //pg.scale(0.8);
-    drawHeads();
+    if(frameCount%30==0){
+        drawHeads();
+    }
     pg.pop();
     //pg.line(0,0,mouseX-width/2,mouseY-height/2);
 
@@ -132,15 +138,12 @@ function draw(){
     effectpass.quad(-1,-1,1,-1,1,1,-1,1);
   
     // draw the second pass to the screen
-    image(pg, 0,0, width, height);
+    image(pg, 0, 0, width, height);
 
-    vectorizeHeads();
+    //vectorizeHeads();
 }
 
 function genHead(x0, y0, w0, h0, seed){
-    
-    w0 = 77;
-    h0 = 111;
 
     w = w0;
     h = h0;
@@ -159,6 +162,8 @@ function genHead(x0, y0, w0, h0, seed){
     earVertsR = [];
     noseVerts = [];
     mouthVerts = [];
+    bodyVerts = [];
+    bodyVertsF = [];
     var cx = -11110;
     var cy = -11110;
     var off = random(1000);
@@ -177,6 +182,7 @@ function genHead(x0, y0, w0, h0, seed){
     chc = .7;
     var eyey = random(-h/12, -h/6);
     var earseeds = [];
+    var bodyseeds = [];
     var timer = 0;
     var chinthresh = random(25, 35);
     var chintrans = random(20, 40);
@@ -229,8 +235,19 @@ function genHead(x0, y0, w0, h0, seed){
                 }
             }
         }
+        
+        if(abs(dy-eyey-10) < 8 && bodyseeds.length < 2){
+            if(bodyseeds.length == 0){
+                bodyseeds.push([dx, dy])
+            }
+            else{
+                if(sqrt((dx-bodyseeds[0][0])*(dx-bodyseeds[0][0])+(dy-bodyseeds[0][1])*(dy-bodyseeds[0][1])) > w/2){
+                    bodyseeds.push([dx, dy])
+                }
+            }
+        }
         timer--;
-        headVerts.push([dx*.999, dy*.9999])
+        headVerts.push([dx, dy])
         headVertsF.push([dx*.93, dy*.93])
     }
 
@@ -244,10 +261,10 @@ function genHead(x0, y0, w0, h0, seed){
     var eyeSpacing = map(abs(eyex), 0, w/4, 0, 1);
     eyeSpacing = map(pow(eyeSpacing, 2), 0, 1, w/4, w/8);
     eyeSpacing = random(w/4, w/6);
-    var eyew = random(6, 8); // / (abs(eyex*.5)+1);
-    var eyeh = random(2, 4)*2;
+    var eyew = random(6, 8)*w0/70; // / (abs(eyex*.5)+1);
+    var eyeh = random(2, 4)*2*w0/70;
     pupiloffx = random(eyew/2, eyew/2)*0;
-    pupiloffy = -random(eyeh/2, eyeh/2)*3;
+    pupiloffy = -random(eyeh/2, eyeh/2)*3;9
     var vec1 = createVector(0, 0);
     var vec2 = createVector(x0, y0);
     var vec = p5.Vector.sub(vec2, vec1);
@@ -335,6 +352,58 @@ function genHead(x0, y0, w0, h0, seed){
         mouthVerts.push([dx, dy])
     }
 
+    //BODY
+    bodyx = eyex * random(0.6, 1.);
+    namp = random(4, 12);
+    frq = 0.4;
+    off = random(2*PI);
+    lim = radians(random(20, 30));
+    var bodyw = random(6, 8);
+    var bodyh = random(60, 80);
+    var bodyy = random(h/12, h/4);
+    if(bodyseeds.length == 2){
+        var x1 = bodyseeds[0][0];
+        var y1 = bodyseeds[0][1];
+        var x2 = bodyseeds[1][0];
+        var y2 = bodyseeds[1][1];
+
+        if(x1>x2){
+            x2 = x1+x2;
+            x1 = x2-x1;
+            x2 = x2-x1;
+            y2 = y1+y2;
+            y1 = y2-y1;
+            y2 = y2-y1;
+        }
+
+        var xc = x1;
+        var yc = y1;
+
+        for(var it = 0; it < 111; it++){
+            xc = xc - 6*(111-it)/111.*power(noise(it*.1,x0), 4);
+            yc = yc + 6;
+            dx = xc;
+            dy = yc;
+            //bodyVerts.push([dx, dy])
+            //bodyVertsF.push([dx*.93, dy*.93])
+        }
+        
+        xc = x2;
+        yc = y2;
+        var tv = [];
+        var tvF = [];
+        for(var it = 0; it < 111; it++){
+            xc = xc - 4*(111-it)/111.*power(noise(it*.1,x0+31.13+y0), 4);
+            yc = yc + 6;
+            dx = xc;
+            dy = yc;
+            tv.push([dx, dy])
+            tvF.push([dx*.93, dy*.93])
+        }
+        //bodyVerts = bodyVerts.concat(tv.reverse());
+        //bodyVertsF = bodyVertsF.concat(tvF.reverse());
+    }
+
     
     //EARS
     earoff = eyex*1.;
@@ -388,6 +457,8 @@ function genHead(x0, y0, w0, h0, seed){
         'headF': headVertsF,
         'nose': noseVerts,
         'mouth': mouthVerts,
+        'body': bodyVerts,
+        'bodyF': bodyVertsF,
         'eyeL': eyeVertsL,
         'eyeR': eyeVertsR,
         'eyeLP': eyeVertsLP,
@@ -396,6 +467,8 @@ function genHead(x0, y0, w0, h0, seed){
         'eyeRB': eyeVertsRB,
         'earL': earVertsL,
         'earR': earVertsR,
+        'x0': x0,
+        'y0': y0,
         'x0': x0,
         'y0': y0,
     }
@@ -413,6 +486,33 @@ function generateHeads(num, seed){
     //randomSeed(round(random(millis()*414.2222)));
 
     for(var k = 0; k < num; k++){
+        var w = random(54, 190);
+        var h = w*random(2.4, 6.9);
+        h = w*random(1.4, 1.9);
+        w = rnoise(seed+k*31.31, 46, 47)*0 + 70 - 30*k/num + random(-10, 10);
+        h = w*rnoise(seed+k*31.31+1231.311, 1.2, 1.4);
+        w = rnoise(seed+k*31.31, 46, 77);
+        h = w*rnoise(seed+k*31.31+1231.311, 1.2, 1.4);
+        var oo = 0;
+        if(k > num/2)
+            oo = 0*231.411;
+        var x, y;
+        x = 0.61*width*(-.5+power(noise( oo+k*.33, 1312.3114, oo+frameCount*0.025, oo),3));
+        y = -0.11*height*(-.5+power(noise( oo+k*.33, 224.666, oo+frameCount*0.0125, oo+21.31),3)) - h/2 + 94;
+        x = 1299*(-.5+power(noise( oo+k*.08, 1312.3114, oo+frameCount*0.025, oo),3));
+        y = 111*(-.5+power(noise( oo+k*.08, 224.666, oo+frameCount*0.0125, oo+21.31),3)) - h/2 + 94;
+        if(random(100) > 70){
+            y = 266*(-.5+power(noise( oo+k*.08, 224.666, oo+frameCount*0.0125, oo+21.31),3)) - h/2 + 94;
+        }
+        if(width < height){
+            x = 0.75*width*(-.5+power(noise( oo+k*.28, 1312.3114, oo+frameCount*0.025),3));
+            y = 0.24*height*(-.5+power(noise( oo+k*.28, 224.666, oo+frameCount*0.0125),3)) - h/2 + 94;
+        }
+        heads.push(genHead(width/2*0+x, height/2*0+y, w, h, k));
+    }
+    
+    var mw = 0.26*min(width,height);
+    for(var k = 0; k < num; k++){
         var w = random(54, 90);
         var h = w*random(2.4, 6.9);
         h = w*random(1.4, 1.9);
@@ -420,15 +520,20 @@ function generateHeads(num, seed){
         h = w*rnoise(seed+k*31.31+1231.311, 1.4, 1.9);
         var oo = 0;
         if(k > num/2)
-            oo = 231.411;
+            oo = 0*231.411;
         var x, y;
-        x = 0.25*width*(-.5+power(noise( oo+k*.28, 1312.3114, oo+frameCount*0.025, oo),3));
-        y = 0.5*height*(-.5+power(noise( oo+k*.28, 224.666, oo+frameCount*0.0125, oo+21.31),3)) - h/2 + 94;
+        x = 0.5*width*(-.5+power(noise( oo+k*.03, 1312.3114, oo+frameCount*0.025, oo),3));
+        x = 200*sin(k*.15);
+        //x = map(k%11/10.0, 0, 1, 0, 1);
+        //x = map(pow(x, 1), 0, 1, -200, 200);
+        y = k*5 - 200 + random(-14,14);
         if(width < height){
             x = 0.75*width*(-.5+power(noise( oo+k*.28, 1312.3114, oo+frameCount*0.025),3));
-            y = 0.24*height*(-.5+power(noise( oo+k*.28, 224.666, oo+frameCount*0.0125),3)) - h/2 + 94;
+            y = 0.24*height*(-.5+power(noise( oo+k*.28, 224.666, oo+frameCount*0.0125),3)) - h/2;
         }
-        heads.push(genHead(width/2*0+x, height/2*0+y, w, h, k));
+        if(dist(x,y*2,0,0) < mw){
+        }
+        //heads.push(genHead(width/2*0+x, height/2*0+y, w, h, k));
     }
 
     var k = 0;
@@ -440,7 +545,7 @@ function generateHeads(num, seed){
         var h = w*random(2.4, 6.9);
         h = w*random(1.4, 1.9);
         if(dist(x,y*2,0,0) < mw){
-            //heads.push(genHead(x, y, w, h));
+            //heads.push(genHead(x, y, w, h, k));
             k++
         }
     }
@@ -450,7 +555,68 @@ function generateHeads(num, seed){
 }
 
 function vectorizeHeads(){
-    
+    //image(mask, -200, 0);
+
+    for(var k = 0; k < heads.length; k++){
+        var angle = radians(77*(-.5 + power(noise(k*113.211, 134.284), 4)));
+        var fff = 2 + k%253;
+        var xx0 = heads[k].x0;
+        var yy0 = heads[k].y0;
+
+        //pg.rotateZ(radians(2229*(-.5 + power(noise(k*113.211, 134.284), 4))));
+
+        var v = createVector(mouseX-width/2-xx0, mouseY-height/2-yy0);
+        v.normalize();
+        v.mult(5);
+        v.y *= 0.5;
+
+        svgout.noFill();
+        svgout.stroke(cl2);
+        svgout.strokeWeight(2.4+1.8*power(noise(k*1.314+globalseed),4));
+        svgout.strokeWeight(2);
+        svgout.strokeJoin(ROUND);
+        Object.entries(heads[k]).forEach(([key, value]) => {
+            if(typeof(value) == 'object' && key != 'headF' && key != 'bodyF'){
+                var down = true;
+                svgout.beginShape();
+                for(var j = 0; j < heads[k][key].length; j++){
+                    var xx = heads[k][key][j][0];
+                    var yy = heads[k][key][j][1];
+                    var x = xx*cos(angle) - yy*sin(angle) + xx0;
+                    var y = xx*sin(angle) + yy*cos(angle) + yy0;
+                    var col = mask.get((x+width/2), (-y+height/2));
+                    //DEBUG
+                    //noStroke(); 
+                    //fill(255-col[0]*10);
+                    //ellipse(x, y, 2, 2);
+                    if(col[0] > k*3){
+                        if(down){
+                            down = false;
+                            svgout.endShape();
+                        }
+                        else{
+                        }
+                    }
+                    else{
+                        if(down){
+                        }
+                        else{
+                            down = true;
+                            svgout.beginShape();
+                        }
+                    }
+                    if(down){
+                        if(heads[k][key].length > 11111130)
+                            svgout.curveVertex(x+width/2, y+height/2);
+                        else
+                            svgout.vertex(x+width/2, y+height/2);
+
+                    }
+                }
+                svgout.endShape();
+            }
+         });
+    }
 }
 
 function drawHeads(){
@@ -461,6 +627,7 @@ function drawHeads(){
     pg.push();
     //pg.rotateY(mouseX/width*2*PI)
     // HEAD
+    print(heads.length)
     for(var k = 0; k < heads.length; k++){
         var fff = 2 + k%253;
         var xx0 = heads[k].x0;
@@ -468,8 +635,9 @@ function drawHeads(){
 
         pg.push();
         var yyy = heads[k].headF[0][1];
-        pg.translate(0, 0, k*25);
-        //pg.rotateZ(radians(9*(-.5 + power(noise(k*113.211, 134.284), 4))));
+        pg.translate(0, 0, k*5);
+        //pg.rotateZ(radians(2229*(-.5 + power(noise(k*113.211, 134.284), 4))));
+        var angle = radians(77*(-.5 + power(noise(k*113.211, 134.284), 4)));
 
         var v = createVector(mouseX-width/2-xx0, mouseY-height/2-yy0);
         v.normalize();
@@ -480,32 +648,41 @@ function drawHeads(){
         pg.fill(0, 100, heads[k].headF[0][1]/height*200);
         pg.fill(3+2*(-.5 + power(noise(k*33.211, 133414.884), 4)), 33, 85 + 10*(-.5 + power(noise(k*532.41, 1314.884), 4)));
         pg.fill(cl1);
-        pg.beginShape();
         mask.noStroke();
-        mask.fill(k);
-        mask.beginShape();
-        var offx = 20*(-.5 + power(noise(k*13.41, 874.884), 4))*0;
-        var offy = 20*(-.5 + power(noise(k*13.41, 314.411), 4))*0;
-        for(var j = 0; j < heads[k].head.length; j++){
-            var x = heads[k].headF[j][0];
-            var y = heads[k].headF[j][1];
-            var offxx = 14*(-.5 + power(noise(j*.01, 345.2284), 4))*0;
-            var offyy = 14*(-.5 + power(noise(j*.01, 514.1121), 4))*0;
-            pg.vertex(x+offx+offxx+xx0, y+offy+offyy+yy0);
-            mask.vertex(x+offx+offxx+xx0, y+offy+offyy+yy0);
-        }
-        mask.endShape();
-        pg.endShape();
+        mask.fill(k*3);
+        Object.entries(heads[k]).forEach(([key, value]) => {
+            if(typeof(value) == 'object' && (key == 'headF' || key == 'bodyF')){
+                mask.beginShape();
+                pg.beginShape();
+                var offx = 20*(-.5 + power(noise(k*13.41, 874.884), 4))*0;
+                var offy = 20*(-.5 + power(noise(k*13.41, 314.411), 4))*0;
+                for(var j = 0; j < heads[k][key].length; j++){
+                    var xx = heads[k][key][j][0];
+                    var yy = heads[k][key][j][1];
+                    var x = xx*cos(angle) - yy*sin(angle);
+                    var y = xx*sin(angle) + yy*cos(angle);
+                    var offxx = 14*(-.5 + power(noise(j*.01, 345.2284), 4))*0;
+                    var offyy = 14*(-.5 + power(noise(j*.01, 514.1121), 4))*0;
+                    pg.vertex(x+offx+offxx+xx0, y+offy+offyy+yy0);
+                    mask.vertex(x+offx+offxx+xx0, y+offy+offyy+yy0);
+                }
+                mask.endShape();
+                pg.endShape();
+            }
+        });
 
         pg.noFill();
         pg.stroke(cl2);
+        pg.strokeWeight(2);
         pg.strokeWeight(2.4+1.8*power(noise(k*1.314+globalseed),4));
         Object.entries(heads[k]).forEach(([key, value]) => {
-            if(typeof(value) == 'object' && key != 'headF'){
+            if(typeof(value) == 'object' && key != 'headF' && key != 'bodyF'){
                 pg.beginShape();
                 for(var j = 0; j < heads[k][key].length; j++){
-                    var x = heads[k][key][j][0];
-                    var y = heads[k][key][j][1];5
+                    var xx = heads[k][key][j][0];
+                    var yy = heads[k][key][j][1];
+                    var x = xx*cos(angle) - yy*sin(angle);
+                    var y = xx*sin(angle) + yy*cos(angle);
                     if(noise(j*0.331,k) > .79){
                         pg.vertex(x+xx0+random(-.5,.5)*1, y+yy0+random(-.5,.5)*1);
                     }
@@ -584,11 +761,10 @@ function keyPressed(){
 
     Tone.start();
     //getAudioContext().resume();
-    num = 20;
 
     if(keyCode == 83 || keyCode == 115){ // 's'
-        print("hello")
-        pg.save("test.svg");
+        vectorizeHeads();
+        svgout.save("test.svg");
     }
 
     if(keyCode-48 >=0 && keyCode-48 <= 9){
@@ -606,7 +782,7 @@ function keyPressed(){
         else if(num == 8)
             num = 44;
         else if(num == 9)
-            num = 80;
+            num = 255/3;
 
         var N = 2 + (keyCode-48-1)/4.;
         if(!started){
