@@ -496,6 +496,21 @@ function keyPressed(){
     //envelope.play(osc);
     //envelope.play(osc2);
     zas = (zas+1)%2;
+    var N = 4;
+    if(!started){
+        started = true;
+        for(var k = 0; k < N; k++){
+            //const synth = new Tone.Synth().toDestination();
+            //synth.triggerAttackRelease(random(100, 1000), 1.1, now+.1*k/N)
 
+            // create an autopanner and start it
+            autoPanner = new Tone.AutoPanner("16n").toDestination().start();
+            // route an oscillator through the panner and start it
+            oscillator = new Tone.Oscillator(200, "sine").toDestination().start();
+        }
+    }
+    else{
+        oscillator.frequency.value = random(100, 500);
+    }
     generateHeads(num);
 }

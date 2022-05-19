@@ -159,7 +159,7 @@ void main() {
 
     outc = blue*bluem + imgd*(1.-bluem) + .15*(-.5 + rndm);
     ff = smoothstep(0.001, 0.004, ff);
-    outc = imgc + .07*(-.5 + rndm);
+    outc = imgc + .0*(-.5 + rndm);
     outc.a = 1.0;
 
     gl_FragColor = outc;
