@@ -116,7 +116,7 @@ function draw(){
     effectpass.quad(-1,-1,1,-1,1,1,-1,1);
   
     // draw the second pass to the screen
-    image(effectpass, 0,0, width, height);
+    image(effectpass, 0, 0, width, height);
 }
 
 function genHead(x0, y0, w0, h0){
@@ -325,7 +325,21 @@ function generateHeads(num){
     }
 }
 
+var ttimer = 0;
+
 function drawHeads(){
+
+
+    if(abs(millis() - round(millis()/1000)*1000) < 100){
+        if(ttimer < 0){
+            proc();
+            ttimer = 30;
+        }
+    }
+    if(ttimer > -10){
+        ttimer--;
+    }
+
     pg.clear();
     pg.background(cl1);
     // HEAD
@@ -462,10 +476,43 @@ function mouseClicked(){
         }
     }
     else{
-        oscillator.frequency.value = random(100, 500);
+        oscillator.frequency.value = random(minFreq, maxFreq);
     }
     generateHeads(20);
 }
+
+
+function proc(){
+
+    //getAudioContext().resume();
+    var num = random(1, 30);
+
+    //getAudioContext().resume();
+    
+    //osc.start();
+    //osc2.start();
+    //envelope.play(osc);
+    //envelope.play(osc2);
+    zas = (zas+1)%2;
+    var N = 4;
+    if(!started){
+        started = true;
+        for(var k = 0; k < N; k++){
+            //const synth = new Tone.Synth().toDestination();
+            //synth.triggerAttackRelease(random(100, 1000), 1.1, now+.1*k/N)
+
+            // create an autopanner and start it
+            autoPanner = new Tone.AutoPanner("16n").toDestination().start();
+            // route an oscillator through the panner and start it
+            oscillator = new Tone.Oscillator(200, "sine").toDestination().start();
+        }
+    }
+    else{
+        oscillator.frequency.value = random(minFreq, maxFreq);
+    }
+    generateHeads(num);
+}
+
 function keyPressed(){
 
     //getAudioContext().resume();
@@ -510,7 +557,7 @@ function keyPressed(){
         }
     }
     else{
-        oscillator.frequency.value = random(100, 500);
+        oscillator.frequency.value = random(minFreq, maxFreq);
     }
     generateHeads(num);
 }
